@@ -19,6 +19,11 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
@@ -32,69 +37,64 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(csrf -> csrf.disable())
-            .sessionManagement(session ->
-                session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authorizeHttpRequests(auth -> auth
+                .csrf(csrf -> csrf.disable())
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .sessionManagement(session ->
+                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(auth -> auth
 
-                // ── Rutas completamente públicas ──────────────────────────────
-                // Login
-                .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
+                        // Permitir todas las peticiones OPTIONS (preflight CORS)
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-                // Ver conferencias y semanas (invitado, estudiante y admin)
-                .requestMatchers(HttpMethod.GET, "/api/semanas/activa").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/semanas/*/conferencias").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/conferencias/*").permitAll()
+                        // ── Rutas completamente públicas ──────────────────────────────
+                        .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/semanas/activa").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/semanas/*/conferencias").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/conferencias/*").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/pdf/agenda/**").permitAll()
 
-                // Descargar PDF de agenda general (invitado)
-                .requestMatchers(HttpMethod.GET, "/api/pdf/agenda/**").permitAll()
+                        // ── Estudiante autenticado ────────────────────────────────────
+                        .requestMatchers(HttpMethod.POST,   "/api/inscripciones").hasRole("ESTUDIANTE")
+                        .requestMatchers(HttpMethod.DELETE, "/api/inscripciones/**").hasRole("ESTUDIANTE")
+                        .requestMatchers(HttpMethod.GET,    "/api/inscripciones/agenda/**").hasAnyRole("ESTUDIANTE", "ADMIN")
+                        .requestMatchers(HttpMethod.PUT,    "/api/usuarios/me").hasRole("ESTUDIANTE")
+                        .requestMatchers(HttpMethod.PUT,    "/api/auth/cambiar-password").hasAnyRole("ESTUDIANTE", "ADMIN")
+                        .requestMatchers(HttpMethod.GET,    "/api/pdf/agenda-personal/**").hasAnyRole("ESTUDIANTE", "ADMIN")
 
-                // ── Rutas de estudiante autenticado ───────────────────────────
-                // Inscribirse y cancelar inscripción
-                .requestMatchers(HttpMethod.POST,   "/api/inscripciones").hasRole("ESTUDIANTE")
-                .requestMatchers(HttpMethod.DELETE, "/api/inscripciones/**").hasRole("ESTUDIANTE")
+                        // ── Solo admin ────────────────────────────────────────────────
+                        .requestMatchers("/api/semanas/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST,   "/api/conferencias").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT,    "/api/conferencias/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/conferencias/**").hasRole("ADMIN")
+                        .requestMatchers("/api/conferencistas/**").hasRole("ADMIN")
+                        .requestMatchers("/api/usuarios/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET,    "/api/inscripciones/conferencia/**").hasRole("ADMIN")
 
-                // Ver su propia agenda
-                .requestMatchers(HttpMethod.GET, "/api/inscripciones/agenda/**")
-                    .hasAnyRole("ESTUDIANTE", "ADMIN")
-
-                // Actualizar sus propios datos (correo)
-                .requestMatchers(HttpMethod.PUT, "/api/usuarios/me").hasRole("ESTUDIANTE")
-
-                // Cambiar contraseña propia
-                .requestMatchers(HttpMethod.PUT, "/api/auth/cambiar-password")
-                    .hasAnyRole("ESTUDIANTE", "ADMIN")
-
-                // Descargar PDF de agenda personal
-                .requestMatchers(HttpMethod.GET, "/api/pdf/agenda-personal/**")
-                    .hasAnyRole("ESTUDIANTE", "ADMIN")
-
-                // ── Rutas exclusivas del administrador ────────────────────────
-                // CRUD de semanas académicas
-                .requestMatchers("/api/semanas/**").hasRole("ADMIN")
-
-                // CRUD de conferencias (GET es público arriba, el resto solo admin)
-                .requestMatchers(HttpMethod.POST,   "/api/conferencias").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.PUT,    "/api/conferencias/**").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.DELETE, "/api/conferencias/**").hasRole("ADMIN")
-
-                // CRUD de conferencistas
-                .requestMatchers("/api/conferencistas/**").hasRole("ADMIN")
-
-                // CRUD de usuarios
-                .requestMatchers("/api/usuarios/**").hasRole("ADMIN")
-
-                // Ver inscripciones de una conferencia
-                .requestMatchers(HttpMethod.GET, "/api/inscripciones/conferencia/**")
-                    .hasRole("ADMIN")
-
-                // ── Cualquier otra ruta requiere autenticación ────────────────
-                .anyRequest().authenticated()
-            )
-            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
-            .authenticationProvider(authenticationProvider());
+                        .anyRequest().authenticated()
+                )
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
+                .authenticationProvider(authenticationProvider());
 
         return http.build();
+    }
+
+    // ── CORS configurado directamente en Spring Security ─────────────────────
+    // Esto reemplaza el CorsConfig.java separado y evita conflictos
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration config = new CorsConfiguration();
+        config.setAllowedOrigins(List.of(
+                "http://localhost:5173",
+                "http://localhost:3000",
+                "https://tu-app.vercel.app"   // ← cambiar al subir a Vercel
+        ));
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        config.setAllowedHeaders(List.of("*"));
+        config.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", config);
+        return source;
     }
 
     @Bean
