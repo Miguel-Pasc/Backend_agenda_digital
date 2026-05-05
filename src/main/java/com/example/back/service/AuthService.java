@@ -20,16 +20,30 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
 
-    // ── Login ─────────────────────────────────────────────────────────────────
+    // ── Login por número de empleado (admin) o matrícula (estudiante) ─────────
     public AuthDTO.LoginResponse login(AuthDTO.LoginRequest request) {
-        // Autentica — lanza excepción si las credenciales son incorrectas
+        String identificador = request.getCorreo().trim();
+
+        // Bloquear acceso directo con correo electrónico
+        if (identificador.contains("@")) {
+            throw new RuntimeException(
+                    "Acceso no permitido con correo. " +
+                            "Los administradores deben usar su número de empleado y " +
+                            "los estudiantes su matrícula."
+            );
+        }
+
+        // Buscar usuario: primero por número de empleado, luego por matrícula
+        Usuario usuario = usuarioRepository.findByNumeroEmpleado(identificador)
+                .or(() -> usuarioRepository.findByMatricula(identificador))
+                .orElseThrow(() -> new RuntimeException(
+                        "No se encontró ningún usuario con el identificador: " + identificador));
+
+        // Autenticar con Spring Security usando el correo interno
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
-                        request.getCorreo(), request.getPassword())
+                        usuario.getCorreo(), request.getPassword())
         );
-
-        Usuario usuario = usuarioRepository.findByCorreo(request.getCorreo())
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
         return AuthDTO.LoginResponse.builder()
                 .token(jwtService.generarToken(usuario))
@@ -43,12 +57,11 @@ public class AuthService {
                 .build();
     }
 
-    // ── Cambiar contraseña (el propio usuario autenticado) ────────────────────
+    // ── Cambiar contraseña ────────────────────────────────────────────────────
     public void cambiarPassword(String correoUsuario, AuthDTO.CambiarPasswordRequest request) {
         Usuario usuario = usuarioRepository.findByCorreo(correoUsuario)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
-        // Verificar que la contraseña actual sea correcta
         if (!passwordEncoder.matches(request.getPasswordActual(), usuario.getPasswordHash())) {
             throw new RuntimeException("La contraseña actual es incorrecta");
         }

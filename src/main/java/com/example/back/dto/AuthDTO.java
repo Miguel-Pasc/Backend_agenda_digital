@@ -4,38 +4,39 @@ package com.example.back.dto;
 
 import com.example.back.model.Carrera;
 import com.example.back.model.Usuario.Rol;
-import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.*;
 
 public class AuthDTO {
 
-    // ── Lo que manda el cliente al hacer login ────────────────────────────────
+    // ── Login request ─────────────────────────────────────────────────────────
+    // El campo "correo" acepta tanto correo electrónico como matrícula.
+    // La lógica de distinguir cuál es cuál está en AuthService.
+    // Por eso se quitó @Email — una matrícula como "MAT-001" no pasaría esa validación.
     @Data @NoArgsConstructor @AllArgsConstructor
     public static class LoginRequest {
-        @NotBlank(message = "El correo es requerido")
-        @Email(message = "El correo no tiene un formato válido")
-        private String correo;
+        @NotBlank(message = "El correo o matrícula es requerido")
+        private String correo; // puede ser correo (admin) o matrícula (estudiante)
 
         @NotBlank(message = "La contraseña es requerida")
         private String password;
     }
 
-    // ── Lo que devuelve el servidor tras un login exitoso ─────────────────────
+    // ── Login response ────────────────────────────────────────────────────────
     @Data @NoArgsConstructor @AllArgsConstructor @Builder
     public static class LoginResponse {
         private String token;
-        private String tipo;        // "Bearer"
+        private String tipo;
         private Long id;
         private String nombre;
         private String correo;
         private Rol rol;
-        private Carrera carrera;    // null si es admin
-        private String matricula;   // null si es admin
+        private Carrera carrera;
+        private String matricula;
     }
 
-    // ── Para cambiar contraseña (el propio usuario) ───────────────────────────
+    // ── Cambiar contraseña ────────────────────────────────────────────────────
     @Data @NoArgsConstructor @AllArgsConstructor
     public static class CambiarPasswordRequest {
         @NotBlank(message = "La contraseña actual es requerida")

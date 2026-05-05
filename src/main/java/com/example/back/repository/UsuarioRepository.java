@@ -14,27 +14,18 @@ import java.util.Optional;
 @Repository
 public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
 
-    // Login — buscar por correo
+    // Login y autenticación
     Optional<Usuario> findByCorreo(String correo);
+    Optional<Usuario> findByMatricula(String matricula);
+    Optional<Usuario> findByNumeroEmpleado(String numeroEmpleado); // ← nuevo
 
-    // Verificar si ya existe un correo registrado
+    // Verificaciones de unicidad
     boolean existsByCorreo(String correo);
-
-    // Verificar si ya existe una matrícula registrada
     boolean existsByMatricula(String matricula);
-
-    // Verificar si ya existe un número de empleado registrado
     boolean existsByNumeroEmpleado(String numeroEmpleado);
 
-    // Listar todos los estudiantes
+    // Listados
     List<Usuario> findByRol(Rol rol);
-
-    // Listar estudiantes por carrera
     List<Usuario> findByRolAndCarrera(Rol rol, Carrera carrera);
-
-    // Buscar estudiante por matrícula
-    Optional<Usuario> findByMatricula(String matricula);
-
-    // Listar solo usuarios activos por rol
     List<Usuario> findByRolAndActivo(Rol rol, Boolean activo);
 }
