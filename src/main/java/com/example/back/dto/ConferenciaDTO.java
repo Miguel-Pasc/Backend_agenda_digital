@@ -98,12 +98,16 @@ public class ConferenciaDTO {
         private LocalTime horaInicio;
         private LocalTime horaFin;
         private String nombre;
+        private String descripcion;          // ← agregar
         private TipoConferencia tipo;
         private Escenario escenario;
         private Integer cupoDisponible;
         private Carrera carrera;
-        private String primerConferencistaNombre;   // solo el primero para la tarjeta
+        private String logoUrl;              // ← agregar
+        private String primerConferencistaNombre;
         private String primerConferencistaFoto;
+        private String primerConferencistaPerfil;  // ← agregar
+        private String primerConferencistaBio;     // ← agregar
         private Boolean inscrito;
     }
 

@@ -241,12 +241,19 @@ public class ConferenciaService {
     }
 
     private ConferenciaDTO.ResumenResponse toResumen(Conferencia c, Boolean inscrito) {
-        String primerNombre = null;
-        String primerFoto = null;
+        String primerNombre  = null;
+        String primerFoto    = null;
+        String primerPerfil  = null;  // ← agregar
+        String primerBio     = null;  // ← agregar
+
         if (!c.getConferencistas().isEmpty()) {
-            primerNombre = c.getConferencistas().get(0).getNombre();
-            primerFoto = c.getConferencistas().get(0).getFotografiaUrl();
+            Conferencista primero = c.getConferencistas().get(0);
+            primerNombre = primero.getNombre();
+            primerFoto   = primero.getFotografiaUrl();
+            primerPerfil = primero.getPerfilProfesional();  // ← agregar
+            primerBio    = primero.getBiografia();           // ← agregar
         }
+
         return ConferenciaDTO.ResumenResponse.builder()
                 .id(c.getId())
                 .dia(c.getDia())
@@ -254,12 +261,16 @@ public class ConferenciaService {
                 .horaInicio(c.getHoraInicio())
                 .horaFin(c.getHoraFin())
                 .nombre(c.getNombre())
+                .descripcion(c.getDescripcion())                    // ← agregar
                 .tipo(c.getTipo())
                 .escenario(c.getEscenario())
                 .cupoDisponible(c.getCupoDisponible())
                 .carrera(c.getCarrera())
+                .logoUrl(c.getLogoUrl())                            // ← agregar
                 .primerConferencistaNombre(primerNombre)
                 .primerConferencistaFoto(primerFoto)
+                .primerConferencistaPerfil(primerPerfil)            // ← agregar
+                .primerConferencistaBio(primerBio)                  // ← agregar
                 .inscrito(inscrito)
                 .build();
     }
