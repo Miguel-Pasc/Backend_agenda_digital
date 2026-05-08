@@ -65,6 +65,7 @@ public class ConferenciaDTO {
         private Integer cupo;
         private Carrera carrera;
         private String logoUrl;
+        private List<ConferencistaDTO.Request> conferencistas; // ← AGREGAR ESTA LÍNEA
     }
 
     // ── Respuesta completa (incluye conferencistas y fecha real calculada) ─────

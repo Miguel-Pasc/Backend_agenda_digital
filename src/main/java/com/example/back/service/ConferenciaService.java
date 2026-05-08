@@ -143,16 +143,42 @@ public class ConferenciaService {
         if (request.getCarrera() != null)    conferencia.setCarrera(request.getCarrera());
         if (request.getLogoUrl() != null)    conferencia.setLogoUrl(request.getLogoUrl());
 
-        // Si cambia el cupo, recalcular cupo disponible
         if (request.getCupo() != null) {
             int diferencia = request.getCupo() - conferencia.getCupo();
             conferencia.setCupo(request.getCupo());
             conferencia.setCupoDisponible(conferencia.getCupoDisponible() + diferencia);
         }
 
-        // Validar horas después de actualizar
         if (!conferencia.getHoraFin().isAfter(conferencia.getHoraInicio())) {
             throw new RuntimeException("La hora de fin debe ser posterior a la hora de inicio");
+        }
+
+        // ── Actualizar conferencistas si vienen en el request ─────────────────
+        if (request.getConferencistas() != null && !request.getConferencistas().isEmpty()) {
+            List<Conferencista> existentes = conferencia.getConferencistas();
+
+            for (int i = 0; i < request.getConferencistas().size(); i++) {
+                ConferencistaDTO.Request confReq = request.getConferencistas().get(i);
+
+                if (i < existentes.size()) {
+                    Conferencista conf = existentes.get(i);
+                    if (confReq.getNombre() != null)            conf.setNombre(confReq.getNombre());
+                    if (confReq.getPerfilProfesional() != null) conf.setPerfilProfesional(confReq.getPerfilProfesional());
+                    if (confReq.getBiografia() != null)         conf.setBiografia(confReq.getBiografia());
+                    if (confReq.getFotografiaUrl() != null)     conf.setFotografiaUrl(confReq.getFotografiaUrl());
+                    if (confReq.getLogoUrl() != null)           conf.setLogoUrl(confReq.getLogoUrl());
+                } else {
+                    Conferencista nuevo = Conferencista.builder()
+                            .nombre(confReq.getNombre())
+                            .perfilProfesional(confReq.getPerfilProfesional())
+                            .biografia(confReq.getBiografia())
+                            .fotografiaUrl(confReq.getFotografiaUrl())
+                            .logoUrl(confReq.getLogoUrl())
+                            .conferencia(conferencia)
+                            .build();
+                    existentes.add(nuevo);
+                }
+            }
         }
 
         return toResponse(conferenciaRepository.save(conferencia), null);

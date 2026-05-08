@@ -53,6 +53,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/conferencias/*").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/pdf/agenda/**").permitAll()
 
+                        .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
+
                         // ── Estudiante autenticado ────────────────────────────────────
                         .requestMatchers(HttpMethod.POST,   "/api/inscripciones").hasRole("ESTUDIANTE")
                         .requestMatchers(HttpMethod.DELETE, "/api/inscripciones/**").hasRole("ESTUDIANTE")

@@ -11,7 +11,6 @@ import java.time.LocalDateTime;
 
 public class UsuarioDTO {
 
-    // ── Crear usuario (solo admin puede hacer esto) ───────────────────────────
     @Data @NoArgsConstructor @AllArgsConstructor @Builder
     public static class CrearRequest {
         @NotBlank(message = "El nombre es requerido")
@@ -28,22 +27,17 @@ public class UsuarioDTO {
         @NotNull(message = "El rol es requerido")
         private Rol rol;
 
-        // Solo para estudiantes
         private String matricula;
         private Carrera carrera;
-
-        // Solo para admins
         private String numeroEmpleado;
     }
 
-    // ── Actualizar datos propios (estudiante actualiza su correo o contraseña) ─
     @Data @NoArgsConstructor @AllArgsConstructor
     public static class ActualizarRequest {
         @Email(message = "El correo no tiene un formato válido")
-        private String correo;      // opcional
+        private String correo;
     }
 
-    // ── Actualizar usuario por admin ──────────────────────────────────────────
     @Data @NoArgsConstructor @AllArgsConstructor @Builder
     public static class ActualizarAdminRequest {
         private String nombre;
@@ -54,7 +48,6 @@ public class UsuarioDTO {
         private Boolean activo;
     }
 
-    // ── Respuesta con datos del usuario ───────────────────────────────────────
     @Data @NoArgsConstructor @AllArgsConstructor @Builder
     public static class Response {
         private Long id;
@@ -68,7 +61,7 @@ public class UsuarioDTO {
         private LocalDateTime fechaRegistro;
     }
 
-    // ── Respuesta resumida (para listas) ──────────────────────────────────────
+    // ← numeroEmpleado agregado aquí
     @Data @NoArgsConstructor @AllArgsConstructor @Builder
     public static class ResumenResponse {
         private Long id;
@@ -76,6 +69,7 @@ public class UsuarioDTO {
         private String correo;
         private Rol rol;
         private String matricula;
+        private String numeroEmpleado;   // ← faltaba esto
         private Carrera carrera;
         private Boolean activo;
     }
