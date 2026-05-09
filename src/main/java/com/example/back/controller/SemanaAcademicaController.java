@@ -31,6 +31,14 @@ public class SemanaAcademicaController {
                 .body(semanaService.crear(request));
     }
 
+    // PUT /api/semanas/{id} — solo ADMIN
+    @PutMapping("/{id}")
+    public ResponseEntity<SemanaAcademicaDTO.Response> actualizar(
+            @PathVariable Long id,
+            @Valid @RequestBody SemanaAcademicaDTO.ActualizarRequest request) {
+        return ResponseEntity.ok(semanaService.actualizar(id, request));
+    }
+
     // GET /api/semanas/activa — público
     // El frontend lo usa para saber qué semana mostrar
     @GetMapping("/activa")

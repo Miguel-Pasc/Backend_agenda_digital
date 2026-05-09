@@ -30,4 +30,6 @@ public interface SemanaAcademicaRepository extends JpaRepository<SemanaAcademica
     @Modifying
     @Query("UPDATE SemanaAcademica s SET s.activa = false")
     void desactivarTodas();
+
+    boolean existsByAnio(Integer anio);
 }

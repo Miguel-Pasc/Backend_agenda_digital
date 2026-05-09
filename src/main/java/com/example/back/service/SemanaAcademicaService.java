@@ -22,9 +22,9 @@ public class SemanaAcademicaService {
     // ── Crear nueva semana académica ──────────────────────────────────────────
     @Transactional
     public SemanaAcademicaDTO.Response crear(SemanaAcademicaDTO.CrearRequest request) {
-        if (semanaRepository.existsByNumeroAndAnio(request.getNumero(), request.getAnio())) {
-            throw new RuntimeException("Ya existe la semana " + request.getNumero()
-                    + " del año " + request.getAnio());
+        // ← Cambiar validación: ahora un año solo puede usarse una vez
+        if (semanaRepository.existsByAnio(request.getAnio())) {
+            throw new RuntimeException("Ya existe una semana académica para el año " + request.getAnio());
         }
         if (request.getFechaFin().isBefore(request.getFechaInicio())) {
             throw new RuntimeException("La fecha de fin no puede ser anterior a la fecha de inicio");
@@ -37,6 +37,27 @@ public class SemanaAcademicaService {
                 .fechaFin(request.getFechaFin())
                 .activa(false)
                 .build();
+
+        return toResponse(semanaRepository.save(semana));
+    }
+
+    @Transactional
+    public SemanaAcademicaDTO.Response actualizar(Long id, SemanaAcademicaDTO.ActualizarRequest request) {
+        SemanaAcademica semana = buscarPorId(id);
+
+        // Si cambia el año, verificar que el nuevo año no esté ocupado por otra semana
+        if (!semana.getAnio().equals(request.getAnio()) &&
+                semanaRepository.existsByAnio(request.getAnio())) {
+            throw new RuntimeException("Ya existe una semana académica para el año " + request.getAnio());
+        }
+        if (request.getFechaFin().isBefore(request.getFechaInicio())) {
+            throw new RuntimeException("La fecha de fin no puede ser anterior a la fecha de inicio");
+        }
+
+        semana.setNumero(request.getNumero());
+        semana.setAnio(request.getAnio());
+        semana.setFechaInicio(request.getFechaInicio());
+        semana.setFechaFin(request.getFechaFin());
 
         return toResponse(semanaRepository.save(semana));
     }
