@@ -61,6 +61,15 @@ public class UsuarioController {
                 usuarioService.actualizarPropios(principal.getName(), request));
     }
 
+    // PUT /api/usuarios/me/password — cualquier usuario autenticado
+    @PutMapping("/me/password")
+    public ResponseEntity<Void> cambiarPassword(
+            @Valid @RequestBody UsuarioDTO.CambiarPasswordRequest request,
+            Principal principal) {
+        usuarioService.cambiarPassword(principal.getName(), request);
+        return ResponseEntity.noContent().build();
+    }
+
     // PUT /api/usuarios/{id} — solo ADMIN
     @PutMapping("/{id}")
     public ResponseEntity<UsuarioDTO.Response> actualizarPorAdmin(

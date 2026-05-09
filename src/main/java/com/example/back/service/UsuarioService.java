@@ -99,6 +99,25 @@ public class UsuarioService {
     }
 
     @Transactional
+    public void cambiarPassword(String correoActual, UsuarioDTO.CambiarPasswordRequest request) {
+        Usuario usuario = usuarioRepository.findByCorreo(correoActual)
+                .orElseThrow(() -> new EntityNotFoundException("Usuario no encontrado"));
+
+        // Verificar que la contraseña actual sea correcta
+        if (!passwordEncoder.matches(request.getPasswordActual(), usuario.getPasswordHash())) {
+            throw new RuntimeException("La contraseña actual es incorrecta");
+        }
+
+        // Verificar que nueva y confirmación coincidan
+        if (!request.getPasswordNueva().equals(request.getPasswordConfirmar())) {
+            throw new RuntimeException("La nueva contraseña y la confirmación no coinciden");
+        }
+
+        usuario.setPasswordHash(passwordEncoder.encode(request.getPasswordNueva()));
+        usuarioRepository.save(usuario);
+    }
+
+    @Transactional
     public UsuarioDTO.Response actualizarPorAdmin(Long id, UsuarioDTO.ActualizarAdminRequest request) {
         Usuario usuario = buscarPorId(id);
 
