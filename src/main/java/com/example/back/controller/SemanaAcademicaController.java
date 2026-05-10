@@ -5,6 +5,8 @@ package com.example.back.controller;
 import com.example.back.dto.ConferenciaDTO;
 import com.example.back.dto.SemanaAcademicaDTO;
 import com.example.back.model.Carrera;
+import com.example.back.repository.UsuarioRepository;
+import java.security.Principal;
 import com.example.back.service.ConferenciaService;
 import com.example.back.service.SemanaAcademicaService;
 import jakarta.validation.Valid;
@@ -22,6 +24,7 @@ public class SemanaAcademicaController {
 
     private final SemanaAcademicaService semanaService;
     private final ConferenciaService conferenciaService;
+    private final UsuarioRepository usuarioRepository; // ← agregar
 
     // POST /api/semanas — solo ADMIN
     @PostMapping
@@ -103,5 +106,33 @@ public class SemanaAcademicaController {
         // /api/inscripciones/agenda para saber en cuáles está inscrito
         return ResponseEntity.ok(
                 conferenciaService.listarConFiltros(id, filtros, null));
+    }
+
+    // GET /api/semanas/{id}/conferencias/mis — estudiante autenticado
+// Igual que listarConferencias pero incluye si el estudiante está inscrito
+    @GetMapping("/{id}/conferencias/mis")
+    public ResponseEntity<List<ConferenciaDTO.ResumenResponse>> listarConferenciasEstudiante(
+            @PathVariable Long id,
+            @RequestParam(required = false) Integer dia,
+            @RequestParam(required = false) Carrera carrera,
+            @RequestParam(required = false) String busqueda,
+            Principal principal) {
+
+        Long estudianteId = null;
+        if (principal != null) {
+            estudianteId = usuarioRepository.findByCorreo(principal.getName())
+                    .filter(u -> u.getRol() == com.example.back.model.Usuario.Rol.ESTUDIANTE)
+                    .map(u -> u.getId())
+                    .orElse(null);
+        }
+
+        ConferenciaDTO.FiltroRequest filtros = ConferenciaDTO.FiltroRequest.builder()
+                .dia(dia)
+                .carrera(carrera)
+                .busqueda(busqueda)
+                .build();
+
+        return ResponseEntity.ok(
+                conferenciaService.listarConFiltros(id, filtros, estudianteId));
     }
 }

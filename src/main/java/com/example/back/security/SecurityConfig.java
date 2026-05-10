@@ -63,6 +63,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT,    "/api/auth/cambiar-password").hasAnyRole("ESTUDIANTE", "ADMIN")
                         .requestMatchers(HttpMethod.GET,    "/api/pdf/agenda-personal/**").hasAnyRole("ESTUDIANTE", "ADMIN")
 
+                        .requestMatchers(HttpMethod.GET, "/api/semanas/*/conferencias/mis").hasRole("ESTUDIANTE")
+                        .requestMatchers(HttpMethod.PUT,    "/api/usuarios/me/password").hasRole("ESTUDIANTE")
                         // ── Solo admin ────────────────────────────────────────────────
                         .requestMatchers("/api/semanas/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.POST,   "/api/conferencias").hasRole("ADMIN")

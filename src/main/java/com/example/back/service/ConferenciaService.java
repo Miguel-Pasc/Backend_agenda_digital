@@ -81,12 +81,18 @@ public class ConferenciaService {
 
         // Aplicar filtros combinados
         if (filtros.getBusqueda() != null && !filtros.getBusqueda().isBlank()) {
-            // Búsqueda por texto: busca en nombre de conferencia y nombre de conferencista
-            List<Conferencia> porNombre = conferenciaRepository
-                    .findBySemanaAndNombreContaining(semanaId, filtros.getBusqueda());
-            List<Conferencia> porConferencista = conferenciaRepository
-                    .findBySemanaAndNombreConferencista(semanaId, filtros.getBusqueda());
-            // Combinar sin duplicados
+            List<Conferencia> porNombre = filtros.getDia() != null
+                    ? conferenciaRepository.findBySemanaAndDiaAndNombreContaining(
+                    semanaId, filtros.getDia(), filtros.getBusqueda())
+                    : conferenciaRepository.findBySemanaAndNombreContaining(
+                    semanaId, filtros.getBusqueda());
+
+            List<Conferencia> porConferencista = filtros.getDia() != null
+                    ? conferenciaRepository.findBySemanaAndDiaAndNombreConferencista(
+                    semanaId, filtros.getDia(), filtros.getBusqueda())
+                    : conferenciaRepository.findBySemanaAndNombreConferencista(
+                    semanaId, filtros.getBusqueda());
+
             Set<Long> ids = porNombre.stream().map(Conferencia::getId).collect(Collectors.toSet());
             porConferencista.forEach(c -> { if (!ids.contains(c.getId())) porNombre.add(c); });
             lista = porNombre;

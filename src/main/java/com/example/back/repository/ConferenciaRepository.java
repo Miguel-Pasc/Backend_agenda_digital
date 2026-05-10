@@ -93,4 +93,33 @@ public interface ConferenciaRepository extends JpaRepository<Conferencia, Long> 
             @Param("horaInicio") LocalTime horaInicio,
             @Param("horaFin") LocalTime horaFin
     );
+
+    // Buscar por nombre de conferencia filtrando también por día
+    @Query("""
+    SELECT c FROM Conferencia c
+    WHERE c.semanaAcademica.id = :semanaId
+    AND c.dia = :dia
+    AND LOWER(c.nombre) LIKE LOWER(CONCAT('%', :nombre, '%'))
+    ORDER BY c.horaInicio ASC
+""")
+    List<Conferencia> findBySemanaAndDiaAndNombreContaining(
+            @Param("semanaId") Long semanaId,
+            @Param("dia") Integer dia,
+            @Param("nombre") String nombre
+    );
+
+    // Buscar por nombre de conferencista filtrando también por día
+    @Query("""
+    SELECT DISTINCT c FROM Conferencia c
+    JOIN c.conferencistas conf
+    WHERE c.semanaAcademica.id = :semanaId
+    AND c.dia = :dia
+    AND LOWER(conf.nombre) LIKE LOWER(CONCAT('%', :nombreConferencista, '%'))
+    ORDER BY c.horaInicio ASC
+""")
+    List<Conferencia> findBySemanaAndDiaAndNombreConferencista(
+            @Param("semanaId") Long semanaId,
+            @Param("dia") Integer dia,
+            @Param("nombreConferencista") String nombreConferencista
+    );
 }
