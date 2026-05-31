@@ -24,6 +24,11 @@ public class SemanaAcademicaDTO {
 
         @NotNull(message = "La fecha de fin es requerida")
         private LocalDate fechaFin;
+
+        private String logoEstadoUrl;
+        private String logoJornadaUrl;
+        private String logoUesUrl;
+        private String frasePie;
     }
 
     // ── NUEVO: Actualizar semana ──────────────────────────────────────────────
@@ -42,6 +47,11 @@ public class SemanaAcademicaDTO {
 
         @NotNull(message = "La fecha de fin es requerida")
         private LocalDate fechaFin;
+
+        private String logoEstadoUrl;
+        private String logoJornadaUrl;
+        private String logoUesUrl;
+        private String frasePie;
     }
 
     @Data @NoArgsConstructor @AllArgsConstructor @Builder
@@ -54,6 +64,10 @@ public class SemanaAcademicaDTO {
         private Boolean activa;
         private Integer duracionDias;
         private Integer totalConferencias;
+        private String logoEstadoUrl;
+        private String logoJornadaUrl;
+        private String logoUesUrl;
+        private String frasePie;
     }
 
     @Data @NoArgsConstructor @AllArgsConstructor @Builder
@@ -64,5 +78,9 @@ public class SemanaAcademicaDTO {
         private LocalDate fechaInicio;
         private LocalDate fechaFin;
         private Boolean activa;
+        private String logoEstadoUrl;
+        private String logoJornadaUrl;
+        private String logoUesUrl;
+        private String frasePie;
     }
 }

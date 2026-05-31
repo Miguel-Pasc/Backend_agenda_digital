@@ -40,6 +40,18 @@ public class SemanaAcademica {
     @Builder.Default
     private List<Conferencia> conferencias = new ArrayList<>();
 
+    @Column(name = "logo_estado_url")
+    private String logoEstadoUrl;
+
+    @Column(name = "logo_jornada_url")
+    private String logoJornadaUrl;
+
+    @Column(name = "logo_ues_url")
+    private String logoUesUrl;
+
+    @Column(name = "frase_pie", length = 500)
+    private String frasePie;
+
     // ── Método utilitario ─────────────────────────────────────────────────────
     // Calcula cuántos días dura la semana académica
     public int getDuracionDias() {
@@ -47,7 +59,7 @@ public class SemanaAcademica {
     }
 
     // Calcula la fecha real de un día (dia=1 → fechaInicio, dia=2 → fechaInicio+1, etc.)
-    public LocalDate getFechaDelDia(int dia) {
-        return fechaInicio.plusDays(dia - 1);
+    public LocalDate getFechaDelDia(Integer dia) {
+        return this.fechaInicio.plusDays(dia - 1);
     }
 }

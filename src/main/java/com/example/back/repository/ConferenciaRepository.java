@@ -122,4 +122,14 @@ public interface ConferenciaRepository extends JpaRepository<Conferencia, Long> 
             @Param("dia") Integer dia,
             @Param("nombreConferencista") String nombreConferencista
     );
+
+    // Para el PDF: trae conferencias con sus conferencistas en una sola query
+    @Query("""
+    SELECT DISTINCT c FROM Conferencia c
+    LEFT JOIN FETCH c.conferencistas
+    WHERE c.semanaAcademica.id = :semanaId
+    ORDER BY c.dia ASC, c.horaInicio ASC
+""")
+    List<Conferencia> findBySemanaConConferencistasParaPdf(
+            @Param("semanaId") Long semanaId);
 }

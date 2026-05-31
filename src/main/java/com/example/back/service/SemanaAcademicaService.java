@@ -35,6 +35,10 @@ public class SemanaAcademicaService {
                 .anio(request.getAnio())
                 .fechaInicio(request.getFechaInicio())
                 .fechaFin(request.getFechaFin())
+                .logoEstadoUrl(request.getLogoEstadoUrl())   // ← agregar
+                .logoJornadaUrl(request.getLogoJornadaUrl()) // ← agregar
+                .logoUesUrl(request.getLogoUesUrl())         // ← agregar
+                .frasePie(request.getFrasePie())             // ← agregar
                 .activa(false)
                 .build();
 
@@ -58,6 +62,11 @@ public class SemanaAcademicaService {
         semana.setAnio(request.getAnio());
         semana.setFechaInicio(request.getFechaInicio());
         semana.setFechaFin(request.getFechaFin());
+        semana.setLogoEstadoUrl(request.getLogoEstadoUrl());
+        semana.setLogoJornadaUrl(request.getLogoJornadaUrl());
+        semana.setLogoUesUrl(request.getLogoUesUrl());
+
+        if (request.getFrasePie() != null) semana.setFrasePie(request.getFrasePie());
 
         return toResponse(semanaRepository.save(semana));
     }
@@ -135,6 +144,10 @@ public class SemanaAcademicaService {
                 .activa(s.getActiva())
                 .duracionDias(s.getDuracionDias())
                 .totalConferencias(s.getConferencias().size())
+                .logoEstadoUrl(s.getLogoEstadoUrl())
+                .logoJornadaUrl(s.getLogoJornadaUrl())
+                .logoUesUrl(s.getLogoUesUrl())
+                .frasePie(s.getFrasePie())
                 .build();
     }
 
@@ -146,6 +159,10 @@ public class SemanaAcademicaService {
                 .fechaInicio(s.getFechaInicio())
                 .fechaFin(s.getFechaFin())
                 .activa(s.getActiva())
+                .logoEstadoUrl(s.getLogoEstadoUrl())   // ← agregar
+                .logoJornadaUrl(s.getLogoJornadaUrl()) // ← agregar
+                .logoUesUrl(s.getLogoUesUrl())         // ← agregar
+                .frasePie(s.getFrasePie())             // ← agregar
                 .build();
     }
 }

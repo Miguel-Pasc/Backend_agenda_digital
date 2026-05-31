@@ -53,6 +53,10 @@ public class Usuario implements UserDetails {
     @Builder.Default
     private LocalDateTime fechaRegistro = LocalDateTime.now();
 
+    public void setPassword(String encode) {
+
+    }
+
     // ── Enum de roles ─────────────────────────────────────────────────────────
 
     public enum Rol { ADMIN, ESTUDIANTE }
