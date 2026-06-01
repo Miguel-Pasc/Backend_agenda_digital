@@ -42,7 +42,7 @@ public class GlobalExceptionHandler {
                 .timestamp(LocalDateTime.now())
                 .status(401)
                 .error("No autorizado")
-                .mensaje("Correo o contraseña incorrectos")
+                .mensaje("Identificador o contraseña incorrectos")
                 .build());
     }
 

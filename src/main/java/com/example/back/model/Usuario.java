@@ -54,7 +54,7 @@ public class Usuario implements UserDetails {
     private LocalDateTime fechaRegistro = LocalDateTime.now();
 
     public void setPassword(String encode) {
-
+        this.passwordHash = encode;
     }
 
     // ── Enum de roles ─────────────────────────────────────────────────────────

@@ -16,7 +16,7 @@ public class AuthDTO {
     // Por eso se quitó @Email — una matrícula como "MAT-001" no pasaría esa validación.
     @Data @NoArgsConstructor @AllArgsConstructor
     public static class LoginRequest {
-        @NotBlank(message = "El correo o matrícula es requerido")
+        @NotBlank(message = "El número de empleado o matrícula es requerido")
         private String correo; // puede ser correo (admin) o matrícula (estudiante)
 
         @NotBlank(message = "La contraseña es requerida")
