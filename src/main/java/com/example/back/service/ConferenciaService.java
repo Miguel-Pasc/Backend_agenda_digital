@@ -40,6 +40,9 @@ public class ConferenciaService {
             throw new RuntimeException("La hora de fin debe ser posterior a la hora de inicio");
         }
 
+        // Validar cupo máximo según escenario
+        validarCupoPorEscenario(request.getEscenario(), request.getCupo());
+
         Conferencia conferencia = Conferencia.builder()
                 .dia(request.getDia())
                 .horaInicio(request.getHoraInicio())
@@ -145,11 +148,21 @@ public class ConferenciaService {
         if (request.getNombre() != null)     conferencia.setNombre(request.getNombre());
         if (request.getDescripcion() != null) conferencia.setDescripcion(request.getDescripcion());
         if (request.getTipo() != null)       conferencia.setTipo(request.getTipo());
-        if (request.getEscenario() != null)  conferencia.setEscenario(request.getEscenario());
+        if (request.getEscenario() != null)  {
+            // Si se cambia el escenario, validar que el cupo actual (o el nuevo si también viene) sea válido
+            int cupoAValidar = request.getCupo() != null ? request.getCupo() : conferencia.getCupo();
+            validarCupoPorEscenario(request.getEscenario(), cupoAValidar);
+            conferencia.setEscenario(request.getEscenario());
+        }
         if (request.getCarrera() != null)    conferencia.setCarrera(request.getCarrera());
         if (request.getLogoUrl() != null)    conferencia.setLogoUrl(request.getLogoUrl());
 
         if (request.getCupo() != null) {
+            // Determinar escenario vigente (el del request si viene, sino el actual)
+            Conferencia.Escenario escenarioVigente =
+                request.getEscenario() != null ? request.getEscenario() : conferencia.getEscenario();
+            validarCupoPorEscenario(escenarioVigente, request.getCupo());
+
             int diferencia = request.getCupo() - conferencia.getCupo();
             conferencia.setCupo(request.getCupo());
             conferencia.setCupoDisponible(conferencia.getCupoDisponible() + diferencia);
@@ -204,6 +217,22 @@ public class ConferenciaService {
         return conferenciaRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException(
                         "Conferencia no encontrada con id: " + id));
+    }
+
+    private void validarCupoPorEscenario(Conferencia.Escenario escenario, int cupo) {
+        int maximo = switch (escenario) {
+            case AULA_MAGNA       -> 100;
+            case ZONA_DE_CULTIVOS -> 150;
+            case SALA_DE_COMPUTO  -> 20;
+        };
+        if (cupo > maximo) {
+            throw new RuntimeException(
+                "El escenario \"" + escenario.name() + "\" tiene una capacidad máxima de "
+                + maximo + " personas. El cupo ingresado (" + cupo + ") lo excede.");
+        }
+        if (cupo < 1) {
+            throw new RuntimeException("El cupo debe ser al menos 1");
+        }
     }
 
     private Set<Long> obtenerInscritasEstudiante(Long estudianteId, Long semanaId) {
