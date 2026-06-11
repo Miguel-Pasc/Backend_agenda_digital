@@ -4,6 +4,7 @@ package com.example.back.service;
 
 import com.example.back.dto.ConferenciaDTO;
 import com.example.back.dto.ConferencistaDTO;
+import com.example.back.exception.ConflictoHorarioException;
 import com.example.back.model.*;
 import com.example.back.repository.ConferenciaRepository;
 import com.example.back.repository.InscripcionRepository;
@@ -12,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -39,6 +41,16 @@ public class ConferenciaService {
         if (!request.getHoraFin().isAfter(request.getHoraInicio())) {
             throw new RuntimeException("La hora de fin debe ser posterior a la hora de inicio");
         }
+
+        // ✅ NUEVA VALIDACIÓN: Verificar conflictos de horario
+        validarSinConflictosHorario(
+                semanaId,
+                request.getDia(),
+                request.getEscenario(),
+                request.getHoraInicio(),
+                request.getHoraFin(),
+                null  // idExcluir = null porque es creación
+        );
 
         // Validar cupo máximo según escenario
         validarCupoPorEscenario(request.getEscenario(), request.getCupo());
@@ -135,41 +147,57 @@ public class ConferenciaService {
     public ConferenciaDTO.Response actualizar(Long id, ConferenciaDTO.ActualizarRequest request) {
         Conferencia conferencia = buscarPorId(id);
 
+        // Determinar valores finales (si vienen en request o se mantienen)
+        Integer nuevoDia = request.getDia() != null ? request.getDia() : conferencia.getDia();
+        LocalTime nuevaHoraInicio = request.getHoraInicio() != null ? request.getHoraInicio() : conferencia.getHoraInicio();
+        LocalTime nuevaHoraFin = request.getHoraFin() != null ? request.getHoraFin() : conferencia.getHoraFin();
+        Conferencia.Escenario nuevoEscenario = request.getEscenario() != null ? request.getEscenario() : conferencia.getEscenario();
+
+        // Validar que hora fin sea posterior a hora inicio (si alguna hora cambió)
+        if ((request.getHoraInicio() != null || request.getHoraFin() != null)
+                && !nuevaHoraFin.isAfter(nuevaHoraInicio)) {
+            throw new RuntimeException("La hora de fin debe ser posterior a la hora de inicio");
+        }
+
+        // Validar día si cambió
         if (request.getDia() != null) {
             int duracion = conferencia.getSemanaAcademica().getDuracionDias();
             if (request.getDia() < 1 || request.getDia() > duracion) {
                 throw new RuntimeException("El día " + request.getDia()
-                        + " no existe en esta semana académica");
+                        + " no existe en esta semana académica (duración: "
+                        + duracion + " días)");
             }
             conferencia.setDia(request.getDia());
         }
+
+        // ✅ VALIDACIÓN DE CONFLICTOS DE HORARIO
+        validarSinConflictosHorario(
+                conferencia.getSemanaAcademica().getId(),
+                nuevoDia,
+                nuevoEscenario,
+                nuevaHoraInicio,
+                nuevaHoraFin,
+                id  // Excluir la propia conferencia
+        );
+
+        // Validar cupo máximo según escenario (si cambió escenario o cupo)
+        int cupoAValidar = request.getCupo() != null ? request.getCupo() : conferencia.getCupo();
+        validarCupoPorEscenario(nuevoEscenario, cupoAValidar);
+
+        // Aplicar cambios
         if (request.getHoraInicio() != null) conferencia.setHoraInicio(request.getHoraInicio());
         if (request.getHoraFin() != null)    conferencia.setHoraFin(request.getHoraFin());
         if (request.getNombre() != null)     conferencia.setNombre(request.getNombre());
         if (request.getDescripcion() != null) conferencia.setDescripcion(request.getDescripcion());
         if (request.getTipo() != null)       conferencia.setTipo(request.getTipo());
-        if (request.getEscenario() != null)  {
-            // Si se cambia el escenario, validar que el cupo actual (o el nuevo si también viene) sea válido
-            int cupoAValidar = request.getCupo() != null ? request.getCupo() : conferencia.getCupo();
-            validarCupoPorEscenario(request.getEscenario(), cupoAValidar);
-            conferencia.setEscenario(request.getEscenario());
-        }
+        if (request.getEscenario() != null)  conferencia.setEscenario(request.getEscenario());
         if (request.getCarrera() != null)    conferencia.setCarrera(request.getCarrera());
         if (request.getLogoUrl() != null)    conferencia.setLogoUrl(request.getLogoUrl());
 
         if (request.getCupo() != null) {
-            // Determinar escenario vigente (el del request si viene, sino el actual)
-            Conferencia.Escenario escenarioVigente =
-                request.getEscenario() != null ? request.getEscenario() : conferencia.getEscenario();
-            validarCupoPorEscenario(escenarioVigente, request.getCupo());
-
             int diferencia = request.getCupo() - conferencia.getCupo();
             conferencia.setCupo(request.getCupo());
             conferencia.setCupoDisponible(conferencia.getCupoDisponible() + diferencia);
-        }
-
-        if (!conferencia.getHoraFin().isAfter(conferencia.getHoraInicio())) {
-            throw new RuntimeException("La hora de fin debe ser posterior a la hora de inicio");
         }
 
         // ── Actualizar conferencistas si vienen en el request ─────────────────
@@ -308,5 +336,57 @@ public class ConferenciaService {
                 .primerConferencistaBio(primerBio)                  // ← agregar
                 .inscrito(inscrito)
                 .build();
+    }
+
+
+    // Agrega este método en ConferenciaService.java
+
+    /**
+     * Valida que no existan conflictos de horario en el mismo día y mismo escenario.
+     * Lanza excepción si encuentra un conflicto.
+     *
+     * @param semanaId ID de la semana académica
+     * @param dia Día de la conferencia
+     * @param escenario Escenario
+     * @param horaInicio Hora de inicio
+     * @param horaFin Hora de fin
+     * @param idExcluir ID a excluir (para edición, null si es creación)
+     * @throws ConflictoHorarioException si hay conflicto
+     */
+    private void validarSinConflictosHorario(Long semanaId, Integer dia,
+                                             Conferencia.Escenario escenario,
+                                             LocalTime horaInicio, LocalTime horaFin,
+                                             Long idExcluir) {
+
+        List<Conferencia> conflictos = conferenciaRepository.findConflictosHorario(
+                semanaId, dia, escenario, horaInicio, horaFin, idExcluir
+        );
+
+        if (!conflictos.isEmpty()) {
+            Conferencia conflicto = conflictos.get(0);
+            throw new ConflictoHorarioException(
+                    String.format("❌ Conflicto de horario: Ya existe una conferencia en el escenario '%s' el día %d de %s a %s",
+                            getEscenarioNombre(escenario),
+                            dia,
+                            conflicto.getHoraInicio().toString(),
+                            conflicto.getHoraFin().toString()
+                    ),
+                    conflicto.getId(),
+                    conflicto.getNombre(),
+                    conflicto.getHoraInicio(),
+                    conflicto.getHoraFin()
+            );
+        }
+    }
+
+    /**
+     * Helper para obtener nombre legible del escenario
+     */
+    private String getEscenarioNombre(Conferencia.Escenario escenario) {
+        return switch (escenario) {
+            case AULA_MAGNA -> "Aula Magna";
+            case SALA_DE_COMPUTO -> "Sala de Cómputo";
+            case ZONA_DE_CULTIVOS -> "Zona de Cultivos";
+        };
     }
 }

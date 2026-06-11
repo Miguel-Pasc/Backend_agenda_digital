@@ -132,4 +132,38 @@ public interface ConferenciaRepository extends JpaRepository<Conferencia, Long> 
 """)
     List<Conferencia> findBySemanaConConferencistasParaPdf(
             @Param("semanaId") Long semanaId);
+
+
+    // Agrega este método al final de tu ConferenciaRepository.java
+
+    /**
+     * Busca conferencias que tengan conflicto de horario en el mismo día y mismo escenario.
+     * Excluye opcionalmente una conferencia (útil para edición).
+     *
+     * @param semanaId ID de la semana académica
+     * @param dia Día de la conferencia
+     * @param escenario Escenario de la conferencia
+     * @param horaInicio Hora de inicio
+     * @param horaFin Hora de fin
+     * @param idExcluir ID de conferencia a excluir (null si no aplicar)
+     * @return Lista de conferencias conflictivas
+     */
+    @Query("""
+    SELECT c FROM Conferencia c
+    WHERE c.semanaAcademica.id = :semanaId
+    AND c.dia = :dia
+    AND c.escenario = :escenario
+    AND (:idExcluir IS NULL OR c.id <> :idExcluir)
+    AND c.horaInicio < :horaFin
+    AND c.horaFin > :horaInicio
+    ORDER BY c.horaInicio ASC
+""")
+    List<Conferencia> findConflictosHorario(
+            @Param("semanaId") Long semanaId,
+            @Param("dia") Integer dia,
+            @Param("escenario") Conferencia.Escenario escenario,
+            @Param("horaInicio") LocalTime horaInicio,
+            @Param("horaFin") LocalTime horaFin,
+            @Param("idExcluir") Long idExcluir
+    );
 }
