@@ -1,6 +1,7 @@
 package com.example.back.model;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Pattern;
 import lombok.*;
 
 @Entity
@@ -17,9 +18,11 @@ public class Conferencista {
     private Long id;
 
     @Column(nullable = false, length = 150)
+    @Pattern(regexp = "^[a-zA-ZáéíóúÁÉÍÓÚ\\s]+$", message = "Solo se permiten letras y espacios")
     private String nombre;
 
     @Column(name = "perfil_profesional", length = 200)
+    @Pattern(regexp = "^[a-zA-ZáéíóúÁÉÍÓÚ\\s]+$", message = "Solo se permiten letras y espacios")
     private String perfilProfesional;
 
     @Column(columnDefinition = "TEXT")

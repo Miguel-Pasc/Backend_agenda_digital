@@ -96,6 +96,7 @@ public class SecurityConfig {
         config.setAllowedOrigins(List.of(
                 "http://localhost:5173",
                 "http://localhost:3000",
+                "http://10.36.9.83:5173",
                 "https://tu-app.vercel.app"   // ← cambiar al subir a Vercel
         ));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));

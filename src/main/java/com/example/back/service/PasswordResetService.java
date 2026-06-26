@@ -78,7 +78,8 @@ public class PasswordResetService {
 
     // ── Helper: armar y enviar el correo ──────────────────────────────────
     private void enviarCorreo(String destino, String token) {
-        String link = frontendUrl + "/reset-password?token=" + token;
+        //String link = frontendUrl + "/reset-password?token=" + token;
+        String link = "http://10.36.9.83:5173" + "/reset-password?token=" + token;
 
         SimpleMailMessage mensaje = new SimpleMailMessage();
         mensaje.setTo(destino);

@@ -1,12 +1,11 @@
 package com.example.back.security;
 
 // 📁 src/main/java/com/example/back/security/GlobalExceptionHandler.java
-//
-// Centraliza todos los errores del sistema y los devuelve en formato consistente
-// usando ErrorDTO para que el frontend siempre reciba la misma estructura.
 
 import com.example.back.dto.ErrorDTO;
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -20,6 +19,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -68,10 +68,16 @@ public class GlobalExceptionHandler {
                 .build());
     }
 
-    // ── Errores de validación (@Valid) ────────────────────────────────────────
-    // Devuelve un mapa campo → mensaje de error
+    // ── Errores de validación con @Valid ──────────────────────────────────────
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorDTO> handleValidation(MethodArgumentNotValidException ex) {
+        String mensajesPersonalizados = ex.getBindingResult()
+                .getFieldErrors()
+                .stream()
+                .map(error -> error.getDefaultMessage())
+                .distinct()
+                .collect(Collectors.joining(", "));
+
         Map<String, String> campos = new HashMap<>();
         ex.getBindingResult().getAllErrors().forEach(error -> {
             String field = ((FieldError) error).getField();
@@ -83,13 +89,42 @@ public class GlobalExceptionHandler {
                 .timestamp(LocalDateTime.now())
                 .status(400)
                 .error("Error de validación")
-                .mensaje("Uno o más campos no son válidos")
+                .mensaje(mensajesPersonalizados)
                 .campos(campos)
                 .build());
     }
 
+    // ✅ NUEVO: Capturar errores de validación durante la persistencia (JPA/Hibernate)
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ErrorDTO> handleConstraintViolation(ConstraintViolationException ex) {
+        // Extraer solo los mensajes personalizados de las validaciones
+        String mensajesPersonalizados = ex.getConstraintViolations()
+                .stream()
+                .map(ConstraintViolation::getMessage)
+                .distinct()
+                .collect(Collectors.joining(", "));
+
+        // También puedes obtener los nombres de los campos que fallaron
+        Map<String, String> campos = new HashMap<>();
+        ex.getConstraintViolations().forEach(violation -> {
+            String propertyPath = violation.getPropertyPath().toString();
+            // Extraer solo el nombre del campo (última parte después del último punto)
+            String fieldName = propertyPath.contains(".")
+                    ? propertyPath.substring(propertyPath.lastIndexOf(".") + 1)
+                    : propertyPath;
+            campos.put(fieldName, violation.getMessage());
+        });
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ErrorDTO.builder()
+                .timestamp(LocalDateTime.now())
+                .status(400)
+                .error("Error de validación")
+                .mensaje(mensajesPersonalizados)
+                .campos(campos.isEmpty() ? null : campos)
+                .build());
+    }
+
     // ── Errores de negocio (RuntimeException) ─────────────────────────────────
-    // Cubre: cupo lleno, cruce de horario, correo duplicado, etc.
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<ErrorDTO> handleRuntime(RuntimeException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ErrorDTO.builder()
